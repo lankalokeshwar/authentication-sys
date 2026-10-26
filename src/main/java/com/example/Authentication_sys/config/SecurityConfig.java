@@ -23,15 +23,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable()) // disableing Cross-Site Request Forgery protection.
                 .authorizeHttpRequests(a -> a
+                        // Static frontend files — always public
+                        .requestMatchers(
+                                "/", "/index.html", "/register.html",
+                                "/forgot-password.html", "/dashboard.html", "/admin.html",
+                                "/styles.css", "/app.js"
+                        ).permitAll()
+                        // Public auth endpoints
                         .requestMatchers(
                                 "/auth/login",
                                 "/auth/register",
+                                "/auth/verify-email",
+                                "/auth/resend-verification",
                                 "/auth/forgot-password",
                                 "/auth/reset-password"
                         ).permitAll()
+                        // Actuator
+                        .requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
+                        // Admin API — requires ADMIN role
                         .requestMatchers("/admin/**").hasRole("ADMIN")
+                        // Everything else requires authentication
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

@@ -35,14 +35,43 @@ public class UserService {
             return null;
         }
         user.setRole("USER");
-        return userRepository.save(user);
+        user.setVerified(false);
+        User saved = userRepository.save(user);
+        // Send verification OTP
+        String otp = otpStore.generate(saved.getEmail());
+        emailService.sendVerificationOtp(saved.getEmail(), saved.getFirstName(), otp);
+        log.info("Verification OTP sent to: {}", saved.getEmail());
+        return saved;
+    }
+
+    // ── Verify email ──────────────────────────────────────────────
+
+    public boolean verifyEmail(String email, String otp) {
+        if (!otpStore.verify(email, otp)) return false;
+        User user = getByEmail(email);
+        user.setVerified(true);
+        userRepository.save(user);
+        log.info("Email verified for: {}", email);
+        return true;
+    }
+
+    public void resendVerificationOtp(String email) {
+        User user = getByEmail(email);
+        if (user.isVerified()) return;
+        String otp = otpStore.generate(email);
+        emailService.sendVerificationOtp(email, user.getFirstName(), otp);
+        log.info("Verification OTP resent to: {}", email);
     }
 
     // ── Login ─────────────────────────────────────────────────────
 
     public User login(String email, String password) {
         Optional<User> user = userRepository.findByEmail(email);
-        if (user.isPresent() && passwordEncoder.matches(password, user.get().getPassword())) {
+        if (user.isPresent() && passwordEncoder.matches(password, user.get().getPassword())) { // handling NoSuchElementException
+            if (user.get().isBlocked())
+                throw new AppExceptions.UserBlockedException("Your account has been blocked. Please contact support.");
+            if (!user.get().isVerified())
+                throw new AppExceptions.EmailNotVerifiedException("Please verify your email before logging in.");
             return user.get();
         }
         return null;
@@ -67,6 +96,39 @@ public class UserService {
         return true;
     }
 
+    // ── Internal: SNS publish ─────────────────────────────────────
+
+        private void publishUserUpdatedEvent(UserUpdatedEvent event) {
+        snsTemplate.sendNotification(topicArn, event, "user-updated");
+        log.info("Published user-updated event to SNS for: {}", event.getEmail());
+    }
+
+    // ── Change email ──────────────────────────────────────────────
+
+    // Step 1: verify password, send OTP to new email
+    public String initiateChangeEmail(String currentEmail, String newEmail, String password) {
+        User user = userRepository.findByEmail(currentEmail).orElse(null);
+        if (user == null) return "User not found.";
+        if (!passwordEncoder.matches(password, user.getPassword())) return "Incorrect password.";
+        if (userRepository.existsByEmail(newEmail)) return "This email is already in use.";
+        // Send OTP to the NEW email to confirm ownership
+        String otp = otpStore.generate(newEmail);
+        emailService.sendChangeEmailOtp(newEmail, user.getFirstName(), otp);
+        log.info("Change-email OTP sent to new address: {}", newEmail);
+        return null; // null = success
+    }
+
+    // Step 2: verify OTP then update email
+    public String confirmChangeEmail(String currentEmail, String newEmail, String otp) {
+        if (!otpStore.verify(newEmail, otp)) return "Invalid or expired OTP.";
+        User user = userRepository.findByEmail(currentEmail).orElse(null);
+        if (user == null) return "User not found.";
+        if (userRepository.existsByEmail(newEmail)) return "This email is already in use.";
+        user.setEmail(newEmail);
+        userRepository.save(user);
+        log.info("Email changed for user: {} -> {}", currentEmail, newEmail);
+        return null; // null = success
+    }
     // ── Forgot / reset password ───────────────────────────────────
 
     public void forgotPassword(String email) {
@@ -86,10 +148,4 @@ public class UserService {
         log.info("Password reset successful for: {}", email);
     }
 
-    // ── Internal: SNS publish ─────────────────────────────────────
-
-    private void publishUserUpdatedEvent(UserUpdatedEvent event) {
-        snsTemplate.sendNotification(topicArn, event, "user-updated");
-        log.info("Published user-updated event to SNS for: {}", event.getEmail());
-    }
 }

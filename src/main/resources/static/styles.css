@@ -1,0 +1,205 @@
+/* ── Reset & Base ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #1a6b8a 0%, #0d3b55 50%, #0a2a40 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* ── Card ─────────────────────────────────────────────────────── */
+.card {
+  background: #0d2d42;
+  border-radius: 16px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.card h1 {
+  color: #ffffff;
+  font-size: 1.8rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.card h2 {
+  color: #ffffff;
+  font-size: 1.4rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* ── Form Elements ────────────────────────────────────────────── */
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  color: #a0bfcf;
+  font-size: 0.8rem;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+input, select {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  background: #ffffff;
+  color: #1a1a2e;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input::placeholder { color: #8899a6; }
+input:focus, select:focus { border-color: #2196f3; }
+select { color: #8899a6; cursor: pointer; }
+select option { color: #1a1a2e; }
+
+/* ── Row for two columns ──────────────────────────────────────── */
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ── Button ───────────────────────────────────────────────────── */
+.btn {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-top: 6px;
+}
+
+.btn:active { transform: scale(0.98); }
+
+.btn-primary { background: #2196f3; color: #ffffff; }
+.btn-primary:hover { background: #1976d2; }
+
+.btn-danger {
+  background: #e53935;
+  color: #ffffff;
+  padding: 7px 14px;
+  width: auto;
+  font-size: 0.85rem;
+  border-radius: 7px;
+  margin-top: 0;
+}
+.btn-danger:hover { background: #c62828; }
+
+.btn-secondary {
+  background: transparent;
+  color: #a0bfcf;
+  border: 1.5px solid #2a4a5e;
+  margin-top: 8px;
+}
+.btn-secondary:hover { background: #1a3a50; color: #fff; }
+
+/* ── Links ────────────────────────────────────────────────────── */
+.link-row {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 0.88rem;
+  color: #a0bfcf;
+}
+.link-row a { color: #2196f3; text-decoration: none; font-weight: 500; }
+.link-row a:hover { text-decoration: underline; }
+
+/* ── Alert Messages ───────────────────────────────────────────── */
+.alert {
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  margin-bottom: 14px;
+  display: none;
+}
+.alert.show { display: block; }
+.alert-success { background: #1b4332; color: #6fcf97; border: 1px solid #27ae60; }
+.alert-error   { background: #3b1a1a; color: #eb5757; border: 1px solid #e53935; }
+
+/* ── Spinner ──────────────────────────────────────────────────── */
+.btn .spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── OTP Steps ────────────────────────────────────────────────── */
+.step { display: none; }
+.step.active { display: block; }
+
+/* ── Dashboard Layout ─────────────────────────────────────────── */
+body.dashboard-body {
+  align-items: flex-start;
+  padding: 30px 20px;
+}
+.dashboard-wrapper { width: 100%; max-width: 540px; margin: 0 auto; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.topbar h1 { color: #fff; font-size: 1.4rem; }
+.topbar .welcome { color: #a0bfcf; font-size: 0.9rem; }
+
+/* ── Admin Table ──────────────────────────────────────────────── */
+body.admin-body { align-items: flex-start; padding: 30px 20px; }
+.admin-wrapper { width: 100%; max-width: 860px; margin: 0 auto; }
+.admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.admin-header h1 { color: #fff; font-size: 1.5rem; }
+
+.table-card {
+  background: #0d2d42;
+  border-radius: 14px;
+  overflow-x: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+table { width: 100%; border-collapse: collapse; min-width: 780px; }
+thead { background: #0a2233; }
+thead th {
+  padding: 14px 16px;
+  text-align: left;
+  color: #a0bfcf;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+tbody tr { border-top: 1px solid #1a3a50; transition: background 0.15s; }
+tbody tr:hover { background: #112d42; }
+tbody td { padding: 13px 16px; color: #d0e8f5; font-size: 0.9rem; }
+
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+.badge-admin { background: #1a3a6e; color: #64b5f6; }
+.badge-user  { background: #1b3a2a; color: #66bb6a; }
+
+.empty-state { text-align: center; padding: 40px; color: #4a7a96; font-size: 0.95rem; }
+
+/* ── Divider ──────────────────────────────────────────────────── */
+.divider { border: none; border-top: 1px solid #1a3a50; margin: 20px 0; }
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .card { padding: 30px 22px; }
+  .row  { grid-template-columns: 1fr; }
+  thead th:nth-child(3), tbody td:nth-child(3),
+  thead th:nth-child(5), tbody td:nth-child(5) { display: none; }
+}

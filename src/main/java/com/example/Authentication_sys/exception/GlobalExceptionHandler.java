@@ -13,7 +13,7 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.BAD_REQUEST) //400
     public Map<String, String> handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getFieldErrors()
@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AppExceptions.UserNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseStatus(HttpStatus.NOT_FOUND) //404
     public Map<String, Object> handleUserNotFound(AppExceptions.UserNotFoundException ex) {
         return Map.of("success", false, "message", ex.getMessage());
     }
@@ -30,6 +30,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AppExceptions.InvalidOtpException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> handleInvalidOtp(AppExceptions.InvalidOtpException ex) {
+        return Map.of("success", false, "message", ex.getMessage());
+    }
+
+    @ExceptionHandler(AppExceptions.UserBlockedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Map<String, Object> handleUserBlocked(AppExceptions.UserBlockedException ex) {
+        return Map.of("success", false, "message", ex.getMessage());
+    }
+
+    @ExceptionHandler(AppExceptions.EmailNotVerifiedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Map<String, Object> handleEmailNotVerified(AppExceptions.EmailNotVerifiedException ex) {
         return Map.of("success", false, "message", ex.getMessage());
     }
 

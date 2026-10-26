@@ -1,9 +1,5 @@
 package com.example.Authentication_sys.exception;
 
-/**
- * All custom exceptions as nested classes.
- * Use as AppExceptions.UserNotFoundException, etc.
- */
 public class AppExceptions {
 
     public static class UserNotFoundException extends RuntimeException {
@@ -16,5 +12,13 @@ public class AppExceptions {
         public InvalidOtpException(String message) {
             super(message);
         }
+    }
+
+    public static class UserBlockedException extends RuntimeException {
+        public UserBlockedException(String message) { super(message); }
+    }
+
+    public static class EmailNotVerifiedException extends RuntimeException {
+        public EmailNotVerifiedException(String message) { super(message); }
     }
 }

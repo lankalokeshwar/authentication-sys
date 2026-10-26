@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    /* ── Search bar ─────────────────────────────── */
+    .search-bar { display: flex; gap: 10px; margin-bottom: 18px; }
+    .search-bar input {
+      flex: 1; background: #0d2d42; color: #d0e8f5;
+      border: 1.5px solid #2a4a5e; border-radius: 10px;
+      padding: 10px 14px; font-size: 0.95rem;
+    }
+    .search-bar input::placeholder { color: #4a7a96; }
+    .search-bar input:focus { border-color: #2196f3; outline: none; }
+    .search-bar button { width: auto; padding: 10px 20px; margin-top: 0; }
+
+    /* ── Action buttons in table ────────────────── */
+    .action-btns { display: flex; gap: 5px; flex-wrap: nowrap; align-items: center; }
+    .btn-view, .btn-edit, .btn-block, .btn-unblock, .action-btns .btn-danger {
+      padding: 5px 10px; font-size: 0.78rem; border-radius: 6px;
+      width: auto; margin-top: 0; border: none; cursor: pointer;
+      white-space: nowrap; font-weight: 600;
+    }
+    .btn-view    { background: #1565c0; color: #fff; }
+    .btn-edit    { background: #e65100; color: #fff; }
+    .btn-block   { background: #6a1b9a; color: #fff; }
+    .btn-unblock { background: #2e7d32; color: #fff; }
+    .action-btns .btn-danger { background: #c62828; color: #fff; }
+    .btn-view:hover    { background: #0d47a1; }
+    .btn-edit:hover    { background: #bf360c; }
+    .btn-block:hover   { background: #4a148c; }
+    .btn-unblock:hover { background: #1b5e20; }
+    .action-btns .btn-danger:hover { background: #b71c1c; }
+
+    /* ── Profile icon + dropdown ────────────────── */
+    .header-right { display: flex; align-items: center; gap: 12px; position: relative; }
+
+    .profile-icon-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #2196f3;
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; color: #fff; font-weight: 700;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .profile-icon-btn:hover { background: #1976d2; }
+
+    .profile-dropdown {
+      display: none;
+      position: absolute;
+      top: 48px; right: 0;
+      background: #0d2d42;
+      border: 1px solid #2a4a5e;
+      border-radius: 12px;
+      min-width: 220px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      z-index: 50;
+      overflow: hidden;
+    }
+    .profile-dropdown.open { display: block; }
+
+    .dropdown-header {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid #1a3a50;
+    }
+    .dropdown-header .admin-label { color: #a0bfcf; font-size: 0.75rem; }
+    .dropdown-header .admin-email { color: #fff; font-size: 0.9rem; font-weight: 600; word-break: break-all; }
+
+    .dropdown-item {
+      display: block; width: 100%;
+      padding: 12px 16px;
+      background: none; border: none;
+      text-align: left; cursor: pointer;
+      color: #d0e8f5; font-size: 0.9rem;
+      transition: background 0.15s;
+    }
+    .dropdown-item:hover { background: #112d42; }
+    .dropdown-item.danger { color: #ef9a9a; }
+    .dropdown-item.danger:hover { background: #2a1010; }
+    .dropdown-divider { border: none; border-top: 1px solid #1a3a50; margin: 0; }
+
+    /* ── Modal overlay ──────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 100; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #0d2d42; border-radius: 14px; padding: 32px 28px;
+      width: 100%; max-width: 420px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+      position: relative; max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { color: #fff; font-size: 1.2rem; margin-bottom: 20px; }
+    .modal-close {
+      position: absolute; top: 14px; right: 16px;
+      background: none; border: none; color: #a0bfcf;
+      font-size: 1.4rem; cursor: pointer; line-height: 1;
+    }
+    .modal-close:hover { color: #fff; }
+
+    /* ── Profile view rows ──────────────────────── */
+    .profile-row {
+      display: flex; justify-content: space-between;
+      padding: 9px 0; border-bottom: 1px solid #1a3a50; font-size: 0.9rem;
+    }
+    .profile-row:last-child { border-bottom: none; }
+    .profile-row .label { color: #a0bfcf; }
+    .profile-row .value { color: #d0e8f5; font-weight: 500; text-align: right; }
+
+    .badge-blocked { background: #4a1515; color: #ef9a9a; }
+  </style>
+</head>
+<body class="admin-body">
+
+  <div class="admin-wrapper">
+
+    <!-- Header -->
+    <div class="admin-header">
+      <div>
+        <h1>Admin Panel</h1>
+        <div style="color:#a0bfcf; font-size:0.9rem; margin-top:2px;">User Management</div>
+      </div>
+      <div class="header-right">
+        <!-- Profile icon -->
+        <button class="profile-icon-btn" id="profileIconBtn" title="Admin Profile">A</button>
+        <!-- Dropdown -->
+        <div class="profile-dropdown" id="profileDropdown">
+          <div class="dropdown-header">
+            <div class="admin-label">Signed in as</div>
+            <div class="admin-email" id="dropdownEmail">—</div>
+          </div>
+          <button class="dropdown-item" onclick="openModal('changeEmailModal'); closeDropdown()">Change Email</button>
+          <button class="dropdown-item" onclick="openModal('changePasswordModal'); closeDropdown()">Change Password</button>
+          <hr class="dropdown-divider" />
+          <button class="dropdown-item danger" id="logoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert" id="alert"></div>
+
+    <!-- Search -->
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search by name or email…" />
+      <button class="btn btn-primary" onclick="handleSearch()">Search</button>
+      <button class="btn btn-secondary" onclick="clearSearch()" style="width:auto;padding:10px 16px;">Clear</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px">#</th>
+            <th style="width:120px">Name</th>
+            <th>Email</th>
+            <th style="width:110px">Phone</th>
+            <th style="width:80px">Status</th>
+            <th style="width:280px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <tr><td colspan="7" class="empty-state">Loading users…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- View Profile Modal -->
+  <div class="modal-overlay" id="viewModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('viewModal')">&times;</button>
+      <h2>User Profile</h2>
+      <div id="viewContent"></div>
+    </div>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+      <h2>Edit User</h2>
+      <div class="alert" id="editAlert"></div>
+      <form id="editForm" novalidate>
+        <input type="hidden" id="editId" />
+        <div class="row">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" id="editFirstName" required />
+          </div>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" id="editLastName" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="editPhone" />
+        </div>
+        <div class="row">
+          <div class="form-group">
+            <label>Date of Birth</label>
+            <input type="date" id="editDob" />
+          </div>
+          <div class="form-group">
+            <label>Gender</label>
+            <select id="editGender">
+              <option value="">Select</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" type="submit" id="editSaveBtn">Save Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Change Email Modal -->
+  <div class="modal-overlay" id="changeEmailModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('changeEmailModal')">&times;</button>
+      <h2>Change Email</h2>
+      <div class="alert" id="emailAlert"></div>
+      <form id="changeEmailForm" novalidate>
+        <div class="form-group">
+          <label>New Email</label>
+          <input type="email" id="newEmail" placeholder="Enter new email" required />
+        </div>
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input type="password" id="emailConfirmPassword" placeholder="Enter your password" required />
+        </div>
+        <button class="btn btn-primary" type="submit" id="changeEmailBtn">Update Email</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div class="modal-overlay" id="changePasswordModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal('changePasswordModal')">&times;</button>
+      <h2>Change Password</h2>
+      <div class="alert" id="passwordAlert"></div>
+      <form id="changePasswordForm" novalidate>
+        <div class="form-group">
+          <label>Current Password</label>
+          <input type="password" id="currentPassword" placeholder="Current password" required />
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" id="newPassword" placeholder="New password (min 8 chars)" required />
+        </div>
+        <div class="form-group">
+          <label>Confirm New Password</label>
+          <input type="password" id="confirmNewPassword" placeholder="Confirm new password" required />
+        </div>
+        <button class="btn btn-primary" type="submit" id="changePasswordBtn">Update Password</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    requireAdmin();
+
+    /* ── Load admin profile into dropdown ───────────────────────── */
+    async function loadAdminProfile() {
+      try {
+        const { data } = await apiGet('/admin/profile');
+        if (data && data.email) {
+          document.getElementById('dropdownEmail').textContent = data.email;
+          // Set initials on icon
+          const initial = (data.firstName || data.email)[0].toUpperCase();
+          document.getElementById('profileIconBtn').textContent = initial;
+        }
+      } catch { /* silently ignore */ }
+    }
+
+    /* ── Profile dropdown toggle ────────────────────────────────── */
+    document.getElementById('profileIconBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.getElementById('profileDropdown').classList.toggle('open');
+    });
+
+    document.addEventListener('click', () => closeDropdown());
+    function closeDropdown() {
+      document.getElementById('profileDropdown').classList.remove('open');
+    }
+
+    /* ── Logout ─────────────────────────────────────────────────── */
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      Auth.clear();
+      window.location.href = '/index.html';
+    });
+
+    /* ── Change Email ────────────────────────────────────────────── */
+    document.getElementById('changeEmailForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert('emailAlert');
+
+      const newEmail = document.getElementById('newEmail').value.trim();
+      const password = document.getElementById('emailConfirmPassword').value;
+
+      if (!newEmail || !password) {
+        showAlert('emailAlert', 'All fields are required.'); return;
+      }
+
+      setLoading('changeEmailBtn', true, 'Update Email');
+      try {
+        const { data } = await apiPut('/admin/profile/email', { newEmail, password });
+        if (data.success) {
+          showAlert('emailAlert', data.message + ' Logging out…', 'success');
+          setTimeout(() => { Auth.clear(); window.location.href = '/index.html'; }, 2000);
+        } else {
+          showAlert('emailAlert', data.message || 'Update failed.');
+        }
+      } catch {
+        showAlert('emailAlert', 'Could not connect to server.');
+      } finally {
+        setLoading('changeEmailBtn', false, 'Update Email');
+      }
+    });
+
+    /* ── Change Password ─────────────────────────────────────────── */
+    document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert('passwordAlert');
+
+      const currentPassword  = document.getElementById('currentPassword').value;
+      const newPassword      = document.getElementById('newPassword').value;
+      const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+      if (!currentPassword || !newPassword || !confirmNewPassword) {
+        showAlert('passwordAlert', 'All fields are required.'); return;
+      }
+      if (newPassword.length < 8) {
+        showAlert('passwordAlert', 'New password must be at least 8 characters.'); return;
+      }
+      if (newPassword !== confirmNewPassword) {
+        showAlert('passwordAlert', 'New passwords do not match.'); return;
+      }
+
+      setLoading('changePasswordBtn', true, 'Update Password');
+      try {
+        const { data } = await apiPut('/admin/profile/password', { currentPassword, newPassword });
+        if (data.success) {
+          showAlert('passwordAlert', data.message, 'success');
+          document.getElementById('changePasswordForm').reset();
+        } else {
+          showAlert('passwordAlert', data.message || 'Update failed.');
+        }
+      } catch {
+        showAlert('passwordAlert', 'Could not connect to server.');
+      } finally {
+        setLoading('changePasswordBtn', false, 'Update Password');
+      }
+    });
+
+    /* ── Render users table ─────────────────────────────────────── */
+    function renderTable(users) {
+      const tbody = document.getElementById('usersTableBody');
+      if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No users found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = users.map((u, i) => `
+        <tr id="row-${esc(u.id)}">
+          <td>${i + 1}</td>
+          <td>${esc((u.firstName || '') + ' ' + (u.lastName || ''))}</td>
+          <td>${esc(u.email || '')}</td>
+          <td>${esc(u.phoneNumber || '—')}</td>
+          <td><span class="badge ${u.blocked ? 'badge-blocked' : 'badge-user'}">${u.blocked ? 'Blocked' : 'Active'}</span></td>
+          <td>
+            <div class="action-btns">
+              <button class="btn-view"  onclick="viewUser('${esc(u.id)}'); event.stopPropagation()">View</button>
+              <button class="btn-edit"  onclick="openEdit('${esc(u.id)}'); event.stopPropagation()">Edit</button>
+              <button class="${u.blocked ? 'btn-unblock' : 'btn-block'}" onclick="toggleBlock('${esc(u.id)}'); event.stopPropagation()">
+                ${u.blocked ? 'Unblock' : 'Block'}
+              </button>
+              <button class="btn btn-danger" onclick="deleteUser('${esc(u.id)}', '${esc(u.email)}'); event.stopPropagation()">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    /* ── Load all users ─────────────────────────────────────────── */
+    async function loadUsers() {
+      try {
+        const { status, data } = await apiGet('/admin/users');
+        if (status !== 200) { showAlert('alert', 'Failed to load users.'); return; }
+        renderTable(data);
+      } catch {
+        showAlert('alert', 'Could not connect to server.');
+      }
+    }
+
+    /* ── Search ─────────────────────────────────────────────────── */
+    async function handleSearch() {
+      const q = document.getElementById('searchInput').value.trim();
+      if (!q) { loadUsers(); return; }
+      try {
+        const { status, data } = await apiGet('/admin/users/search?q=' + encodeURIComponent(q));
+        if (status !== 200) { showAlert('alert', 'Search failed.'); return; }
+        renderTable(data);
+      } catch {
+        showAlert('alert', 'Could not connect to server.');
+      }
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      hideAlert('alert');
+      loadUsers();
+    }
+
+    document.getElementById('searchInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleSearch();
+    });
+
+    /* ── View profile modal ─────────────────────────────────────── */
+    async function viewUser(id) {
+      try {
+        const { status, data } = await apiGet('/admin/users/' + id);
+        if (status !== 200) { showAlert('alert', 'Could not load user.'); return; }
+        document.getElementById('viewContent').innerHTML = `
+          <div class="profile-row"><span class="label">Name</span>         <span class="value">${esc((data.firstName||'') + ' ' + (data.lastName||''))}</span></div>
+          <div class="profile-row"><span class="label">Email</span>        <span class="value">${esc(data.email||'')}</span></div>
+          <div class="profile-row"><span class="label">Phone</span>        <span class="value">${esc(data.phoneNumber||'—')}</span></div>
+          <div class="profile-row"><span class="label">Gender</span>       <span class="value">${esc(data.gender||'—')}</span></div>
+          <div class="profile-row"><span class="label">Date of Birth</span><span class="value">${esc(data.dateOfBirth||'—')}</span></div>
+          <div class="profile-row"><span class="label">Status</span>       <span class="value">${data.blocked ? '🔴 Blocked' : '🟢 Active'}</span></div>
+        `;
+        openModal('viewModal');
+      } catch {
+        showAlert('alert', 'Could not connect to server.');
+      }
+    }
+
+    /* ── Edit user modal ────────────────────────────────────────── */
+    async function openEdit(id) {
+      try {
+        const { status, data } = await apiGet('/admin/users/' + id);
+        if (status !== 200) { showAlert('alert', 'Could not load user.'); return; }
+        document.getElementById('editId').value        = data.id;
+        document.getElementById('editFirstName').value = data.firstName   || '';
+        document.getElementById('editLastName').value  = data.lastName    || '';
+        document.getElementById('editPhone').value     = data.phoneNumber || '';
+        document.getElementById('editDob').value       = data.dateOfBirth || '';
+        document.getElementById('editGender').value    = data.gender      || '';
+        hideAlert('editAlert');
+        openModal('editModal');
+      } catch {
+        showAlert('alert', 'Could not connect to server.');
+      }
+    }
+
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert('editAlert');
+
+      const id        = document.getElementById('editId').value;
+      const firstName = document.getElementById('editFirstName').value.trim();
+      const lastName  = document.getElementById('editLastName').value.trim();
+      const phone     = document.getElementById('editPhone').value.trim();
+      const dob       = document.getElementById('editDob').value;
+      const gender    = document.getElementById('editGender').value;
+
+      if (!firstName || !lastName) {
+        showAlert('editAlert', 'First and last name are required.'); return;
+      }
+
+      setLoading('editSaveBtn', true, 'Save Changes');
+      try {
+        const { data } = await apiPut('/admin/users/' + id, {
+          firstName, lastName,
+          phoneNumber: phone || '',
+          dateOfBirth: dob || null,
+          gender: gender || null,
+          role: 'USER'
+        });
+        if (data.success) {
+          closeModal('editModal');
+          showAlert('alert', 'User updated successfully.', 'success');
+          loadUsers();
+        } else {
+          showAlert('editAlert', data.message || 'Update failed.');
+        }
+      } catch {
+        showAlert('editAlert', 'Could not connect to server.');
+      } finally {
+        setLoading('editSaveBtn', false, 'Save Changes');
+      }
+    });
+
+    /* ── Delete ─────────────────────────────────────────────────── */
+    async function deleteUser(id, email) {
+      if (!confirm(`Delete "${email}"? This cannot be undone.`)) return;
+      try {
+        const { data } = await apiDelete('/admin/users/' + id);
+        if (data.success) {
+          document.getElementById('row-' + id)?.remove();
+          showAlert('alert', `User "${email}" deleted.`, 'success');
+          if (!document.getElementById('usersTableBody').querySelector('tr[id]')) {
+            document.getElementById('usersTableBody').innerHTML =
+              '<tr><td colspan="7" class="empty-state">No users found.</td></tr>';
+          }
+        } else {
+          showAlert('alert', data.message || 'Delete failed.');
+        }
+      } catch {
+        showAlert('alert', 'Could not connect to server.');
+      }
+    }
+
+    /* ── Block / Unblock ────────────────────────────────────────── */
+    async function toggleBlock(id) {
+      try {
+        const res = await fetch('/admin/users/' + id + '/toggle-block', {
+          method: 'PATCH',
+          headers: { 'Authorization': 'Bearer ' + Auth.get() }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showAlert('alert', data.message, 'success');
+          loadUsers();
+        } else {
+          showAlert('alert', data.message || 'Action failed.');
+        }
+      } catch {
+        showAlert('alert', 'Could not connect to server.');
+      }
+    }
+
+    /* ── Modal helpers ──────────────────────────────────────────── */
+    function openModal(id)  { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    document.querySelectorAll('.modal-overlay').forEach(el => {
+      el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+    });
+
+    /* ── XSS helper ─────────────────────────────────────────────── */
+    function esc(str) {
+      return String(str ?? '')
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    loadAdminProfile();
+    loadUsers();
+  </script>
+</body>
+</html>

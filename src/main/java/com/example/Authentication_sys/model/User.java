@@ -30,6 +30,12 @@ public class User {
     private String gender;
     private String role;
 
+    @Column(columnDefinition = "TINYINT(1)")
+    private boolean blocked = false;
+
+    @Column(columnDefinition = "TINYINT(1)")
+    private boolean verified = false;
+
     public String getFullName() {
         return firstName + " " + lastName;
     }

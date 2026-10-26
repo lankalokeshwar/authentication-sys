@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="dashboard-body">
+
+  <div class="dashboard-wrapper">
+
+    <div class="topbar">
+      <div>
+        <h1>My Profile</h1>
+        <div class="welcome" id="welcomeMsg"></div>      </div>
+      <button class="btn btn-danger" id="logoutBtn" style="margin-top:0;">Logout</button>
+    </div>
+
+    <div class="card">
+      <h2>Account Details</h2>
+      <hr class="divider" />
+
+      <div class="alert" id="alert"></div>
+
+      <form id="profileForm" novalidate>
+        <div class="row">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" id="firstName" placeholder="First Name" required />
+          </div>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" id="lastName" placeholder="Last Name" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="phoneNumber" placeholder="Phone Number" />
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>Date of Birth</label>
+            <input type="date" id="dateOfBirth" />
+          </div>
+          <div class="form-group">
+            <label>Gender</label>
+            <select id="gender">
+              <option value="">Select</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" type="submit" id="updateBtn">Save Changes</button>
+        <button class="btn btn-secondary" type="button" id="changeEmailBtn" style="margin-top:10px;">Change Email</button>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- Change Email Modal -->
+  <div id="emailModalOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:100; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#0d2d42; border-radius:14px; padding:32px 28px; width:100%; max-width:400px; box-shadow:0 12px 40px rgba(0,0,0,0.5); position:relative;">
+      <button onclick="closeEmailModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#a0bfcf;font-size:1.4rem;cursor:pointer;">&times;</button>
+      <h2 style="color:#fff;font-size:1.2rem;margin-bottom:20px;">Change Email</h2>
+      <div class="alert" id="emailModalAlert"></div>
+
+      <!-- Step 1: new email + password -->
+      <div id="emailStep1">
+        <form id="changeEmailForm" novalidate>
+          <div class="form-group">
+            <label>New Email</label>
+            <input type="email" id="newEmail" placeholder="Enter new email" required />
+          </div>
+          <div class="form-group">
+            <label>Confirm Password</label>
+            <input type="password" id="emailPassword" placeholder="Enter your current password" required />
+          </div>
+          <button class="btn btn-primary" type="submit" id="sendEmailOtpBtn">Send OTP</button>
+        </form>
+      </div>
+
+      <!-- Step 2: OTP sent to new email -->
+      <div id="emailStep2" style="display:none;">
+        <p style="color:#a0bfcf; font-size:0.88rem; margin-bottom:16px;">
+          OTP sent to <strong id="newEmailDisplay" style="color:#fff;"></strong>. Enter it below.
+        </p>
+        <form id="confirmEmailForm" novalidate>
+          <div class="form-group">
+            <input type="text" id="emailOtp" placeholder="Enter OTP" maxlength="6"
+                   style="letter-spacing:0.3em; font-size:1.1rem; text-align:center;" required />
+          </div>
+          <button class="btn btn-primary" type="submit" id="confirmEmailBtn">Confirm Change</button>
+          <button class="btn btn-secondary" type="button" onclick="backToEmailStep1()" style="margin-top:8px;">Back</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    requireAuth();
+
+    const user = Auth.getUser();
+    if (user) {
+      document.getElementById('welcomeMsg').textContent = 'Welcome, ' + (user.firstName || user.email) + ' | ' + (user.email || '');
+      document.getElementById('firstName').value   = user.firstName   || '';
+      document.getElementById('lastName').value    = user.lastName    || '';
+      document.getElementById('phoneNumber').value = user.phoneNumber || '';
+      document.getElementById('dateOfBirth').value = user.dateOfBirth || '';
+      document.getElementById('gender').value      = user.gender      || '';
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      Auth.clear();
+      window.location.href = '/index.html';
+    });
+
+    /* ── Change Email modal ──────────────────────────────────────── */
+    let pendingNewEmail = '';
+
+    document.getElementById('changeEmailBtn').addEventListener('click', () => {
+      document.getElementById('emailModalOverlay').style.display = 'flex';
+    });
+
+    function closeEmailModal() {
+      document.getElementById('emailModalOverlay').style.display = 'none';
+      document.getElementById('changeEmailForm').reset();
+      document.getElementById('confirmEmailForm').reset();
+      document.getElementById('emailStep1').style.display = 'block';
+      document.getElementById('emailStep2').style.display = 'none';
+      hideAlert('emailModalAlert');
+    }
+
+    function backToEmailStep1() {
+      document.getElementById('emailStep1').style.display = 'block';
+      document.getElementById('emailStep2').style.display = 'none';
+      hideAlert('emailModalAlert');
+    }
+
+    document.getElementById('emailModalOverlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('emailModalOverlay')) closeEmailModal();
+    });
+
+    // Step 1: send OTP to new email
+    document.getElementById('changeEmailForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert('emailModalAlert');
+
+      const newEmail = document.getElementById('newEmail').value.trim();
+      const password = document.getElementById('emailPassword').value;
+
+      if (!newEmail || !password) {
+        showAlert('emailModalAlert', 'All fields are required.'); return;
+      }
+
+      setLoading('sendEmailOtpBtn', true, 'Send OTP');
+      try {
+        const { data } = await apiPost('/auth/change-email/initiate', { newEmail, password });
+        if (data.success) {
+          pendingNewEmail = newEmail;
+          document.getElementById('newEmailDisplay').textContent = newEmail;
+          document.getElementById('emailStep1').style.display = 'none';
+          document.getElementById('emailStep2').style.display = 'block';
+          showAlert('emailModalAlert', data.message, 'success');
+        } else {
+          showAlert('emailModalAlert', data.message || 'Failed to send OTP.');
+        }
+      } catch {
+        showAlert('emailModalAlert', 'Could not connect to server.');
+      } finally {
+        setLoading('sendEmailOtpBtn', false, 'Send OTP');
+      }
+    });
+
+    // Step 2: confirm OTP
+    document.getElementById('confirmEmailForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert('emailModalAlert');
+
+      const otp = document.getElementById('emailOtp').value.trim();
+      if (!otp) { showAlert('emailModalAlert', 'Please enter the OTP.'); return; }
+
+      setLoading('confirmEmailBtn', true, 'Confirm Change');
+      try {
+        const { data } = await apiPost('/auth/change-email/confirm', { newEmail: pendingNewEmail, otp });
+        if (data.success) {
+          showAlert('emailModalAlert', data.message + ' Logging out…', 'success');
+          setTimeout(() => { Auth.clear(); window.location.href = '/index.html'; }, 2000);
+        } else {
+          showAlert('emailModalAlert', data.message || 'Verification failed.');
+        }
+      } catch {
+        showAlert('emailModalAlert', 'Could not connect to server.');
+      } finally {
+        setLoading('confirmEmailBtn', false, 'Confirm Change');
+      }
+    });
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert('alert');
+
+      const firstName   = document.getElementById('firstName').value.trim();
+      const lastName    = document.getElementById('lastName').value.trim();
+      const phoneNumber = document.getElementById('phoneNumber').value.trim();
+      const dateOfBirth = document.getElementById('dateOfBirth').value;
+      const gender      = document.getElementById('gender').value;
+
+      if (!firstName || !lastName) {
+        showAlert('alert', 'First and last name are required.'); return;
+      }
+      if (phoneNumber && !/^[6-9]\d{9}$/.test(phoneNumber)) {
+        showAlert('alert', 'Phone must be 10 digits starting with 6–9.'); return;
+      }
+
+      setLoading('updateBtn', true, 'Save Changes');
+
+      try {
+        const { status, data } = await apiPut('/auth/update', {
+          firstName, lastName,
+          phoneNumber: phoneNumber || '',
+          dateOfBirth: dateOfBirth || null,
+          gender: gender || null
+        });
+
+        if (data.success) {
+          const updated = { ...Auth.getUser(), firstName, lastName, phoneNumber, dateOfBirth, gender };
+          Auth.saveUser(updated);
+          document.getElementById('welcomeMsg').textContent = 'Welcome, ' + firstName + ' | ' + (Auth.getUser().email || '');
+          showAlert('alert', 'Profile update submitted. Changes will reflect shortly.', 'success');
+        } else {
+          showAlert('alert', data.message || 'Update failed.');
+        }
+      } catch {
+        showAlert('alert', 'Could not connect to server.');
+      } finally {
+        setLoading('updateBtn', false, 'Save Changes');
+      }
+    });
+  </script>
+</body>
+</html>

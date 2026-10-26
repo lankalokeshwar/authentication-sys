@@ -61,6 +61,72 @@ public class Requests {
         public String email;
     }
 
+    public static class AdminUpdateRequest {
+        @NotBlank(message = "First name is required")
+        public String firstName;
+
+        @NotBlank(message = "Last name is required")
+        public String lastName;
+
+        @Pattern(regexp = "^$|^[6-9]\\d{9}$", message = "Invalid phone number")
+        public String phoneNumber;
+
+        public String dateOfBirth;
+        public String gender;
+        public String role;
+    }
+
+    public static class ChangeEmailRequest {
+        @NotBlank(message = "New email is required")
+        @Email(message = "Invalid email format")
+        public String newEmail;
+
+        @NotBlank(message = "Password is required")
+        public String password;
+    }
+
+    public static class VerifyEmailRequest {
+        @NotBlank(message = "Email is required")
+        @Email(message = "Invalid email format")
+        public String email;
+
+        @NotBlank(message = "OTP is required")
+        public String otp;
+    }
+
+    public static class VerifyChangeEmailRequest {
+        @NotBlank(message = "New email is required")
+        @Email(message = "Invalid email format")
+        public String newEmail;
+
+        @NotBlank(message = "OTP is required")
+        public String otp;
+    }
+
+    public static class ResendOtpRequest {
+        @NotBlank(message = "Email is required")
+        @Email(message = "Invalid email format")
+        public String email;
+    }
+
+    public static class AdminChangeEmailRequest {
+        @NotBlank(message = "New email is required")
+        @Email(message = "Invalid email format")
+        public String newEmail;
+
+        @NotBlank(message = "Password is required")
+        public String password;
+    }
+
+    public static class AdminChangePasswordRequest {
+        @NotBlank(message = "Current password is required")
+        public String currentPassword;
+
+        @NotBlank(message = "New password is required")
+        @Size(min = 8, message = "Password must be at least 8 characters")
+        public String newPassword;
+    }
+
     public static class ResetPasswordRequest {
         @NotBlank(message = "Email is required")
         @Email(message = "Invalid email format")

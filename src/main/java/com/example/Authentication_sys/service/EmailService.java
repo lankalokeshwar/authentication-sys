@@ -12,6 +12,36 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
+    public void sendVerificationOtp(String toEmail, String firstName, String otp) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject("Verify Your Email Address");
+        message.setText(
+                "Hi " + firstName + ",\n\n" +
+                "Thank you for registering!\n\n" +
+                "Your email verification OTP is: " + otp + "\n\n" +
+                "This OTP is valid for 10 minutes. Do not share it with anyone.\n\n" +
+                "If you did not create an account, please ignore this email.\n\n" +
+                "Regards,\nThe Auth Team"
+        );
+        mailSender.send(message);
+    }
+
+    public void sendChangeEmailOtp(String toEmail, String firstName, String otp) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject("Verify Your New Email Address");
+        message.setText(
+                "Hi " + firstName + ",\n\n" +
+                "We received a request to change your email address to this one.\n\n" +
+                "Your verification OTP is: " + otp + "\n\n" +
+                "This OTP is valid for 10 minutes. Do not share it with anyone.\n\n" +
+                "If you did not request this change, please ignore this email.\n\n" +
+                "Regards,\nThe Auth Team"
+        );
+        mailSender.send(message);
+    }
+
     public void sendPasswordResetOtp(String toEmail, String firstName, String otp) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);

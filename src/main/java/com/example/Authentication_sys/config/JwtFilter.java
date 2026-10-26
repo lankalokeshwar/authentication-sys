@@ -1,5 +1,7 @@
 package com.example.Authentication_sys.config;
 
+import com.example.Authentication_sys.model.User;
+import com.example.Authentication_sys.repository.UserRepository;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +22,18 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private UserRepository userRepository;
+
     private static final Set<String> PUBLIC_PATHS = Set.of(
             "/auth/login",
             "/auth/register",
+            "/auth/verify-email",
+            "/auth/resend-verification",
             "/auth/forgot-password",
-            "/auth/reset-password"
+            "/auth/reset-password",
+            "/actuator/health",
+            "/actuator/prometheus"
     );
 
     @Override
@@ -32,7 +41,9 @@ public class JwtFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = req.getServletPath();
-        if (PUBLIC_PATHS.contains(path)) {
+
+        // Allow public API paths and all static frontend files
+        if (PUBLIC_PATHS.contains(path) || isStaticFile(path)) {
             chain.doFilter(req, res);
             return;
         }
@@ -46,17 +57,39 @@ public class JwtFilter extends OncePerRequestFilter {
         try {
             String token = header.substring(7);
             String email = jwtUtil.validate(token);
-            String role  = jwtUtil.extractRole(token);
+
+            User user = userRepository.findByEmail(email).orElse(null);
+
+            if (user == null) {
+                res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "User no longer exists");
+                return;
+            }
+
+            if (user.isBlocked()) {
+                res.sendError(HttpServletResponse.SC_FORBIDDEN, "Your account has been blocked. Please contact support.");
+                return;
+            }
 
             List<GrantedAuthority> authorities =
-                    List.of(new SimpleGrantedAuthority("ROLE_" + role));
+                    List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(email, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             chain.doFilter(req, res);
+
         } catch (Exception e) {
             res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
         }
+    }
+
+    private boolean isStaticFile(String path) {
+        return path.equals("/")
+                || path.endsWith(".html")
+                || path.endsWith(".css")
+                || path.endsWith(".js")
+                || path.endsWith(".ico")
+                || path.endsWith(".png")
+                || path.endsWith(".jpg");
     }
 }
